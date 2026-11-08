@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#10283f"><meta name="description" content="English vocabulary with detailed Nepali and Hindi meanings.">
+<link rel="manifest" href="manifest.webmanifest"><title>WordMaster</title>
+<style>
+:root{--navy:#10283f;--blue:#245b82;--ink:#172b3b;--muted:#647789;--paper:#f3f6f8;--line:#e1e8ed;--gold:#e8b85b}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);font-family:system-ui,-apple-system,"Noto Sans Devanagari",sans-serif;color:var(--ink)}
+header{background:linear-gradient(135deg,#10283f,#1e4d6b);color:white;padding:22px 18px 25px;border-radius:0 0 24px 24px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px}.logo{width:36px;height:36px;border-radius:12px;background:#ffffff20;display:grid;place-items:center;font-size:20px}
+.tag{color:#c9d9e5;font-size:13px;margin:5px 0 18px}.search{display:flex;background:white;border-radius:14px;padding:5px;gap:5px}
+input{min-width:0;flex:1;border:0;outline:0;padding:12px;font-size:16px;color:var(--ink);background:transparent}
+button{border:0;border-radius:11px;padding:0 16px;background:var(--gold);color:#172b3b;font-weight:750;font-size:14px}
+#status{font-size:13px;color:#dce8ef;margin:9px 2px 0;min-height:18px}
+main{max-width:760px;margin:auto;padding:16px 14px 36px}.tabs{display:flex;gap:8px;margin:0 0 14px}.tab{padding:9px 14px;border-radius:20px;background:#e5edf2;color:#36536a;font-size:13px;font-weight:700}.tab.active{background:var(--navy);color:white}
+.card{background:white;border:1px solid var(--line);border-radius:17px;padding:16px;margin:12px 0;box-shadow:0 3px 12px #10283f08}
+h2{font-size:19px;margin:0 0 10px}h3{font-size:14px;color:#36536a;margin:0 0 8px}.word{font-size:29px;font-weight:800}.phonetic{color:var(--muted);font-size:14px;margin-top:2px}
+.pill{display:inline-block;padding:5px 9px;border-radius:20px;background:#eaf2f7;color:#285675;font-size:12px;margin:3px 4px 3px 0}
+.meaning-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.translation{background:#f6f9fb;border-radius:13px;padding:12px;min-width:0}.translation b{display:block;color:#426178;font-size:12px;margin-bottom:6px}.native{font-size:18px;font-weight:750;line-height:1.5}.sub{font-size:13px;color:#506578;line-height:1.55;margin-top:5px}
+.example{border-left:3px solid var(--gold);padding:3px 0 3px 11px;margin:12px 0}.en{font-weight:650;line-height:1.5}.tr{font-size:14px;color:#506578;margin-top:5px;line-height:1.5}
+.syns{line-height:2}.note{font-size:12px;color:var(--muted);line-height:1.5}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.secondary{background:#eaf0f4;color:#24445b;padding:10px 13px}.empty{text-align:center;color:var(--muted);padding:28px 12px}
+.saved-item{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);gap:10px}.saved-item button{padding:8px 11px}
+footer{text-align:center;color:#8192a0;font-size:11px;padding:10px 20px 24px}
+@media(max-width:420px){.meaning-grid{grid-template-columns:1fr}.word{font-size:26px}}
+</style></head><body>
+<header><div class="brand"><div class="logo">文</div> WordMaster</div>
+<div class="tag">Understand words deeply · English · नेपाली · हिन्दी</div>
+<div class="search"><input id="q" placeholder="Enter an English word…" autocomplete="off"><button id="go">Search</button></div><div id="status">Search an English word to begin.</div></header>
+<main><div class="tabs"><div class="tab active" data-tab="dict">Dictionary</div><div class="tab" data-tab="saved">My words</div></div>
+<section id="dict"><div id="out"><div class="card empty">📖<p><b>Your vocabulary journey starts here.</b></p>Try “relentless”, “prominent” or “contemplate”.</div></div></section>
+<section id="saved" hidden><div class="card"><h2>Saved vocabulary</h2><div id="savedList" class="note"></div></div></section></main>
+<footer>WordMaster · Internet is needed for new lookups. Saved words stay on this device.<br>Machine translations may need checking for specialist or formal use.</footer>
+<script>
+const $=id=>document.getElementById(id), esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let current="";
+async function tr(s,lang){try{let r=await fetch("https://api.mymemory.translated.net/get?q="+encodeURIComponent(s.slice(0,450))+"&langpair=en|"+lang);let j=await r.json();return j.responseData?.translatedText||""}catch(e){return ""}}
+function say(w){let u=new SpeechSynthesisUtterance(w);u.lang="en-GB";speechSynthesis.speak(u)}
+async function lookup(){let w=$("q").value.trim().toLowerCase();if(!w){$("status").textContent="Type a word first.";return}current=w;$("out").innerHTML='<div class="card empty">Looking up word and translations…</div>';$("status").textContent="Fetching dictionary information…";
+try{let r=await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+encodeURIComponent(w));if(!r.ok)throw Error("Word not found. Check spelling or try the base form.");let d=(await r.json())[0];await draw(d);$("status").textContent="Entry loaded. Check context when choosing between synonyms."}
+catch(e){$("out").innerHTML='<div class="card"><h2>Lookup issue</h2>'+esc(e.message)+'</div>';$("status").textContent="Could not complete lookup."}}
+async function draw(d){let defs=[];(d.meanings||[]).forEach(m=>(m.definitions||[]).forEach(x=>defs.push({pos:m.partOfSpeech,def:x.definition,ex:x.example,syn:[...(x.synonyms||[]),...(m.synonyms||[])],ant:[...(x.antonyms||[]),...(m.antonyms||[])]})));
+let ph=(d.phonetics||[]).find(x=>x.text)?.text||"",audio=(d.phonetics||[]).find(x=>x.audio)?.audio||"",syn=[...new Set(defs.flatMap(x=>x.syn))].slice(0,24),ant=[...new Set(defs.flatMap(x=>x.ant))].slice(0,18);
+let blocks=[];for(let x of defs.slice(0,6)){let [ne,hi]=await Promise.all([tr(x.def,"ne"),tr(x.def,"hi")]);blocks.push({x,ne,hi})}
+let h='<div class="card"><div class="word">'+esc(d.word)+'</div><div class="phonetic">'+esc(ph||"Pronunciation not supplied")+'</div><div class="actions"><button class="secondary" onclick="say('+JSON.stringify(d.word)+')">🔊 Pronounce</button>'+(audio?'<button class="secondary" onclick="new Audio('+JSON.stringify(audio)+').play()">▶ Audio</button>':'')+'<button class="secondary" onclick="save()">＋ Save word</button></div></div>';
+h+='<div class="card"><h2>Detailed meanings</h2><p class="note">Meanings are grouped by part of speech. Each translation corresponds to its English definition.</p>';
+for(let i=0;i<blocks.length;i++){let b=blocks[i];h+='<div style="padding:12px 0;border-top:1px solid #e7edf1"><span class="pill">'+esc(b.x.pos)+'</span><div style="font-weight:650;line-height:1.55;margin:7px 0">'+(i+1)+'. '+esc(b.x.def)+'</div><div class="meaning-grid"><div class="translation"><b>नेपाली अर्थ</b><div class="native">'+esc(b.ne||"अनुवाद उपलब्ध छैन")+'</div></div><div class="translation"><b>हिन्दी अर्थ</b><div class="native">'+esc(b.hi||"अनुवाद उपलब्ध नहीं")+'</div></div></div></div>'}h+='</div>';
+h+='<div class="card"><h2>Synonyms</h2><div class="syns">'+(syn.length?syn.map(x=>'<span class="pill">'+esc(x)+'</span>').join(""):'<span class="note">No synonyms supplied.</span>')+'</div><h3 style="margin-top:12px">Antonyms</h3><div class="syns">'+(ant.length?ant.map(x=>'<span class="pill">'+esc(x)+'</span>').join(""):'<span class="note">No antonyms supplied.</span>')+'</div><p class="note">Similar words can differ in tone and context; they are not always interchangeable.</p></div>';
+h+='<div class="card"><h2>Example sentences</h2>';let exs=defs.filter(x=>x.ex).slice(0,6);if(!exs.length)h+='<p class="note">The dictionary source has not supplied examples for this word.</p>';
+for(let x of exs){let [ne,hi]=await Promise.all([tr(x.ex,"ne"),tr(x.ex,"hi")]);h+='<div class="example"><div class="en">'+esc(x.ex)+'</div><div class="tr">नेपाली: '+esc(ne||"अनुवाद उपलब्ध छैन")+'</div><div class="tr">हिन्दी: '+esc(hi||"अनुवाद उपलब्ध नहीं")+'</div></div>'}h+='</div>';
+h+='<div class="card"><h2>Grammar and usage</h2><div>'+[...new Set(defs.map(x=>x.pos))].map(x=>'<span class="pill">'+esc(x)+'</span>').join("")+'</div><p class="note">These labels show the grammatical roles recorded by the dictionary. Check the sentence structure before changing a word’s form. For IELTS, prefer precise, natural usage over unnecessarily complicated vocabulary.</p></div>';$("out").innerHTML=h}
+function list(){try{return JSON.parse(localStorage.getItem("wm_saved")||"[]")}catch(e){return []}}
+function save(){let a=list();if(!a.includes(current)){a.unshift(current);localStorage.setItem("wm_saved",JSON.stringify(a));$("status").textContent="Saved "+current+"."}else $("status").textContent="Already saved."}
+function showSaved(){$("savedList").innerHTML=list().length?list().map(w=>'<div class="saved-item"><b>'+esc(w)+'</b><span><button class="secondary" onclick="openWord('+JSON.stringify(w)+')">Open</button> <button class="secondary" onclick="removeWord('+JSON.stringify(w)+')">×</button></span></div>').join(""):'No saved words yet. Search and save a word.'}
+function openWord(w){$("q").value=w;document.querySelector('[data-tab="dict"]').click();lookup()}
+function removeWord(w){localStorage.setItem("wm_saved",JSON.stringify(list().filter(x=>x!==w)));showSaved()}
+$("go").onclick=lookup;$("q").addEventListener("keydown",e=>{if(e.key==="Enter")lookup()});
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===t));$("dict").hidden=t.dataset.tab!=="dict";$("saved").hidden=t.dataset.tab!=="saved";if(t.dataset.tab==="saved")showSaved()});
+if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(()=>{});
+</script></body></html>
